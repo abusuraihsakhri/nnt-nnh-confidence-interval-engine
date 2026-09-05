@@ -1,7 +1,7 @@
-# Nnt Nnh Confidence Interval Engine
+# NNT & NNH Confidence Interval Engine
 
 > **Domain:** Clinical Decision Support & Biomedical Computing  
-> **Reference Guidelines & Standards:** `Standard Clinical Formulations & ISO/IEC Quality Frameworks`
+> **Standards:** CAP / CLSI / ISO Quality Frameworks
 
 <div align="center">
 
@@ -18,99 +18,154 @@
 
 ## 📖 What It Does
 
-Number Needed to Treat (NNT) & NNH Calculator
-Calculates Absolute Risk Reduction (ARR), Relative Risk (RR), NNT, and exact reciprocal Wilson/Score 95% CIs.
+Number Needed to Treat (NNT) & NNH Calculator with enterprise-grade security and audit capabilities.
 
-Zero-dependency Python implementation with single and batch evaluation.
+- Calculates risk scores and clinical classifications
+- Single and batch evaluation modes
+- Multi-worker consensus system with specialized agents
+- REST API via FastAPI
+- WebSocket telemetry streaming
+
 Author: Dr. Abu Suraih Sakhri
 License: MIT
 
 ---
 
-## ⚙️ Key Capabilities & Algorithmic Modules
+## 🚀 Installation
 
-### 🔬 Analytical Functions
-
-- **`calculate_metrics()`**: Core domain algorithm for nnt-nnh-confidence-interval-engine.
-- **`process_single()`** — calculates and validates process_single parameters.
-- **`process_batch()`** — calculates and validates process_batch parameters.
-- **`main()`** — calculates and validates main parameters.
-
----
-
-## 📐 Mathematical Formulation & Logic
-
-```text
-  score = primary_val
-  rounded_score = round(score, 2)
-  res = calculate_metrics(**kwargs)
-  calc_res = calculate_metrics(**r)
-```
-
----
-
-## 💻 CLI Quickstart & Usage
-
-### 1. Guided Interactive Mode
+### Local Development
 ```bash
-python cli.py
+# Clone the repository
+git clone https://github.com/abusuraihsakhri/nnt-nnh-confidence-interval-engine.git
+cd nnt-nnh-confidence-interval-engine
+
+# Create virtual environment
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Set required environment variable
+export AUDIT_SECRET_KEY="your-secure-random-key-here"  # On Windows: set AUDIT_SECRET_KEY=...
 ```
 
-### 2. Direct Parameterized Evaluation
-```bash
-python cli.py --task-id <value> --target <value> --primary <value> --secondary <value>
-```
-
-### Parameter Reference
-- `--task-id`: Specifies input measurement or parameter value.
-- `--target`: Specifies input measurement or parameter value.
-- `--primary`: Specifies input measurement or parameter value.
-- `--secondary`: Specifies input measurement or parameter value.
-- `--critical`: Specifies input measurement or parameter value.
-- `--status`: Specifies input measurement or parameter value.
-- `--input`: Specifies input measurement or parameter value.
-- `--output`: Specifies input measurement or parameter value.
-
-### Input Data Schema
-
-| Field | Description | Requirement |
-|:------|:------------|:------------|
-| `Patient_ID` | Parameter / observation metric | Required |
-| `v1` | Parameter / observation metric | Required |
-| `v2` | Parameter / observation metric | Required |
-| `v3` | Parameter / observation metric | Required |
-
----
-
-## 🛡️ Security & Enterprise Architecture
-
-* **Zero-PHI Outbound Interceptor:** Active AST and regex inspection blocking SSNs, MRNs, phone numbers, and patient identifiers.
-* **Tamper-Evident HMAC-SHA256 Audit Trail:** Chained, cryptographically signed logs for every evaluation and state transition.
-* **Air-Gapped LLM Reasoning Adapter:** Agnostic integration for local Ollama instances (`llama3`, `mistral`), Claude 3.5 Sonnet, GPT-4o, and deterministic test mocks.
-* **Active Learning Bayesian Calibration:** Dynamic tracker updating worker reliability weights and monitoring Brier calibration drift.
-* **FastAPI & Prometheus Telemetry:** Exposes OpenAPI 3.1 REST endpoints and operational Prometheus metrics (`/metrics`).
-
----
-
-## 🧪 Testing & Verification
-
-Run the automated test suite:
-
-```bash
-pytest -v
-```
-
-Execute high-throughput batch simulation benchmarks:
-
-```bash
-python simulator.py --tasks 1000 --concurrency 8
-```
-
----
-
-## 🐳 Container Deployment
-
+### Docker
 ```bash
 docker build -t nnt-nnh-confidence-interval-engine .
-docker run -p 8000:8000 nnt-nnh-confidence-interval-engine
+docker run -p 8000:8000 -e AUDIT_SECRET_KEY="your-secure-key" nnt-nnh-confidence-interval-engine
 ```
+
+---
+
+## ⚙️ Usage
+
+### CLI Commands
+
+#### 1. Single Evaluation
+```bash
+python cli.py audit --task-id TASK-001 --target TARGET-01 --primary 28.5 --secondary 14.2
+```
+
+#### 2. Batch Processing
+```bash
+python cli.py batch -i sample.csv -o results.csv
+```
+
+#### 3. Chat Query
+```bash
+python cli.py chat "Explain the current system status"
+```
+
+#### 4. Verify Audit Trail
+```bash
+python cli.py verify-audit
+```
+
+#### 5. Start API Server
+```bash
+python cli.py serve --host 127.0.0.1 --port 8000
+```
+
+### Direct NNT Calculator
+```bash
+# Single calculation
+python nnt_calc.py single --v1 14.5 --v2 4.2 --v3 1.8
+
+# Batch CSV processing
+python nnt_calc.py batch -i sample.csv -o results.csv
+```
+
+### REST API Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/health` | Health check |
+| GET | `/metrics` | Prometheus-style metrics |
+| POST | `/api/audit` | Submit task for evaluation |
+| POST | `/api/chat` | Query the system |
+| GET | `/api/audit/logs` | Get audit trail |
+
+---
+
+## 🛡️ Security Features
+
+* **Zero-PHI Outbound Interceptor:** Active regex inspection blocking SSNs, MRNs, phone numbers, emails, and patient identifiers.
+* **Tamper-Evident HMAC-SHA256 Audit Trail:** Chained, cryptographically signed logs for every evaluation.
+* **Environment-Based Secret Management:** No hardcoded secrets; `AUDIT_SECRET_KEY` must be provided via environment variable.
+
+---
+
+## 🧪 Testing
+
+```bash
+# Set test environment variable
+export AUDIT_SECRET_KEY="test-key"
+
+# Run all tests
+pytest -v
+
+# Run with coverage
+pytest -v --cov=.
+```
+
+---
+
+## 📁 Project Structure
+
+```
+nnt-nnh-confidence-interval-engine/
+├── agents/                 # Enterprise agent system
+│   ├── api.py             # FastAPI REST server
+│   ├── base.py            # Security, PHI guard, audit trail
+│   ├── models.py          # Pydantic data models
+│   ├── supervisor.py      # Multi-agent orchestrator
+│   ├── workers.py         # Specialized evaluation workers
+│   ├── llm_factory.py     # LLM provider abstraction
+│   ├── metrics.py         # Prometheus metrics collector
+│   ├── learning.py        # Bayesian calibration engine
+│   └── streamer.py        # WebSocket telemetry
+├── tests/                 # Test suite
+├── cli.py                 # Command-line interface
+├── nnt_calc.py            # Core NNT calculation engine
+├── enrichment.py          # Enrichment feature modules
+├── simulator.py           # High-throughput stress testing
+├── web/index.html         # Operations console UI
+├── Dockerfile             # Container definition
+├── docker-compose.yml     # Docker Compose config
+└── requirements.txt       # Python dependencies
+```
+
+---
+
+## 🐳 Docker Compose
+
+```bash
+docker-compose up -d
+```
+
+---
+
+## 📝 License
+
+MIT License - see [LICENSE](LICENSE) for details.
