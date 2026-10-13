@@ -106,6 +106,7 @@
     const records = parseCSV(csv);
     if (!records.length) throw new Error("CSV is empty.");
     const headers = records[0].map(x => x.trim());
+    if (headers.some(h => /^[\s]*[=+\-@]/.test(h))) throw new Error("Unsafe CSV header name.");
     if (new Set(headers).size !== headers.length || INPUTS.some(h => headers.indexOf(h) < 0)) {
       throw new Error("CSV must have unique headers including: " + INPUTS.join(", "));
     }
