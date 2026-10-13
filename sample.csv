@@ -1,4 +1,4 @@
-Patient_ID,v1,v2,v3
-PT-101,14.5,4.2,1.8
-PT-102,8.0,2.1,0.5
-PT-103,28.4,12.0,5.5
+study_id,control_events,control_total,treatment_events,treatment_total
+Trial-A,120,1000,80,1000
+Trial-B,8,100,12,100
+Trial-C,20,200,20,200
