@@ -1,171 +1,76 @@
-# NNT & NNH Confidence Interval Engine
+# NNT / NNH Confidence Interval Engine
 
-> **Domain:** Clinical Decision Support & Biomedical Computing  
-> **Standards:** CAP / CLSI / ISO Quality Frameworks
+Calculate number needed to treat (NNT), number needed to harm (NNH), absolute risk reduction (ARR), relative risk (RR), and two-sided confidence intervals from adverse-event counts in **two independent groups**. The standalone browser tool and Python library implement Newcombe's uncorrected Wilson-score method for the risk difference.
 
-<div align="center">
+## Features
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-![Python](https://img.shields.io/badge/Python-3.10%20%7C%203.11%20%7C%203.12-3776AB.svg?logo=python&logoColor=white)
-![FastAPI](https://img.shields.io/badge/FastAPI-0.111-009688.svg?logo=fastapi&logoColor=white)
-![Audit Trail](https://img.shields.io/badge/Audit-HMAC--SHA256_Tamper--Evident-brightgreen.svg)
-![Zero-PHI Guard](https://img.shields.io/badge/Guard-Zero--PHI_Outbound-blue.svg)
-![Docker](https://img.shields.io/badge/Docker-Ready-2496ED.svg?logo=docker&logoColor=white)
+- Counts-based risks, relative effects, NNT/NNH, and upward whole-person rounding
+- Two-sided 90%, 95%, or 99% score intervals in the browser; configurable confidence levels in Python
+- Explicitly undefined/unbounded reciprocal intervals when the risk-difference interval contains zero
+- Browser batch CSV processing and download; no calculation backend required
+- Python single-case CLI and atomic validated batch CSV export
+- Optional REST API and separately maintained, nonclinical legacy audit demo
 
-</div>
+## Use the browser application
 
----
+Serve this repository as a static site (e.g., run **python -m http.server 8000**) and open **http://localhost:8000**. Enter **adverse-event counts**, not percentages, for control and treatment plus each group's total participants. Click **Calculate**.
 
-## 📖 What It Does
+CSV import requires the columns **control_events, control_total, treatment_events, treatment_total**. See [sample.csv](sample.csv). Optional de-identified study metadata is preserved. Browser imports are limited to 1 MB and 4,000 data rows; a bad row aborts export.
 
-Number Needed to Treat (NNT) & NNH Calculator with enterprise-grade security and audit capabilities.
+**Privacy:** Browser calculations and CSV handling are entirely local using JavaScript and the File API. The application does not transmit entered data or store it on a backend. Host platforms may still record normal page requests. Use aggregated study data rather than personal identifiers.
 
-- Calculates risk scores and clinical classifications
-- Single and batch evaluation modes
-- Multi-worker consensus system with specialized agents
-- REST API via FastAPI
-- WebSocket telemetry streaming
+## Python CLI
 
-Author: Dr. Abu Suraih Sakhri
-License: MIT
+Python 3.10+; the statistical engine uses the standard library only.
 
----
+    python nnt_calc.py single \
+      --control-events 120 --control-total 1000 \
+      --treatment-events 80 --treatment-total 1000 \
+      --confidence 0.95
 
-## 🚀 Installation
+    python nnt_calc.py batch -i sample.csv -o results.csv
 
-### Local Development
-```bash
-# Clone the repository
-git clone https://github.com/abusuraihsakhri/nnt-nnh-confidence-interval-engine.git
-cd nnt-nnh-confidence-interval-engine
+Batch processing validates all rows before replacing the destination CSV. When the risk-difference interval contains zero, reciprocal confidence endpoints are not finite: JSON returns null and CSV leaves endpoints blank.
 
-# Create virtual environment
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+## REST API and legacy demonstration tools
 
-# Install dependencies
-pip install -r requirements.txt
+    python -m pip install -r requirements.txt
+    python cli.py serve --host 127.0.0.1 --port 8000
 
-# Set required environment variable
-export AUDIT_SECRET_KEY="your-secure-random-key-here"  # On Windows: set AUDIT_SECRET_KEY=...
-```
+The browser app is served at **/**, interactive API documentation at **/docs**, and the actual calculator is **POST /api/nnt**:
 
-### Docker
-```bash
-docker build -t nnt-nnh-confidence-interval-engine .
-docker run -p 8000:8000 -e AUDIT_SECRET_KEY="your-secure-key" nnt-nnh-confidence-interval-engine
-```
+    curl -s http://127.0.0.1:8000/api/nnt \
+      -H 'Content-Type: application/json' \
+      -d '{"control_events":120,"control_total":1000,"treatment_events":80,"treatment_total":1000}'
 
----
+Legacy **cli.py audit, chat, batch, verify-audit** commands and related API routes remain for compatibility. They are *demonstration audit workflows*, not validated NNT calculations or clinical decision-support rules. The mock chat does not invoke an external model.
 
-## ⚙️ Usage
+Those legacy audit features require a private **AUDIT_SECRET_KEY**. Generate and export a unique key before serving audit routes or starting Docker Compose:
 
-### CLI Commands
+    export AUDIT_SECRET_KEY="$(python -c 'import secrets; print(secrets.token_urlsafe(48))')"
+    docker compose up --build
 
-#### 1. Single Evaluation
-```bash
-python cli.py audit --task-id TASK-001 --target TARGET-01 --primary 28.5 --secondary 14.2
-```
+The default Compose port binds to 127.0.0.1:8000. The audit ledger is held in memory, and the legacy API is not designed as an authenticated multi-user service. Do not submit protected health information. Do not reuse a secret that has appeared in Git history.
 
-#### 2. Batch Processing
-```bash
-python cli.py batch -i sample.csv -o results.csv
-```
+## Statistical method
 
-#### 3. Chat Query
-```bash
-python cli.py chat "Explain the current system status"
-```
+For adverse events, event risk = events / participants and ARR = control risk − treatment risk. Positive ARR implies benefit (NNT = 1/ARR); negative ARR implies harm (NNH = 1/|ARR|). Zero ARR has no finite reciprocal. Relative risk is undefined when control risk is zero.
 
-#### 4. Verify Audit Trail
-```bash
-python cli.py verify-audit
-```
+Two-sided uncertainty uses Newcombe (1998), method 10, combining uncorrected Wilson score intervals for the *independent* binomial groups. If the resulting ARR interval touches or crosses zero, the reciprocal interval is unbounded/disconnected; do not report a spurious finite interval. The method is not suitable for matched, clustered, adjusted, time-to-event, or non-binary outcomes, and does not confer clinical validation.
 
-#### 5. Start API Server
-```bash
-python cli.py serve --host 127.0.0.1 --port 8000
-```
+Reference: Newcombe RG. *Interval estimation for the difference between independent proportions: comparison of eleven methods.* Statistics in Medicine. 1998;17:873–890. [PubMed](https://pubmed.ncbi.nlm.nih.gov/9595617/).
 
-### Direct NNT Calculator
-```bash
-# Single calculation
-python nnt_calc.py single --v1 14.5 --v2 4.2 --v3 1.8
+## Development and tests
 
-# Batch CSV processing
-python nnt_calc.py batch -i sample.csv -o results.csv
-```
+    python -m pip install -r requirements.txt
+    python -m pytest -q
+    node --check app.js
+    node --test tests/test_web.cjs
 
-### REST API Endpoints
+CI tests Python 3.10–3.13 and Node's built-in test runner. A successful production-branch build attempts to deploy the client-side application to GitHub Pages. Python itself does not run on GitHub Pages; the browser calculates in JavaScript without Pyodide.
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/health` | Health check |
-| GET | `/metrics` | Prometheus-style metrics |
-| POST | `/api/audit` | Submit task for evaluation |
-| POST | `/api/chat` | Query the system |
-| GET | `/api/audit/logs` | Get audit trail |
+Modern Chrome, Firefox, Safari, and Edge support the required JavaScript and File APIs. Manual real-browser end-to-end validation remains separate from automated tests.
 
----
+## License
 
-## 🛡️ Security Features
-
-* **Zero-PHI Outbound Interceptor:** Active regex inspection blocking SSNs, MRNs, phone numbers, emails, and patient identifiers.
-* **Tamper-Evident HMAC-SHA256 Audit Trail:** Chained, cryptographically signed logs for every evaluation.
-* **Environment-Based Secret Management:** No hardcoded secrets; `AUDIT_SECRET_KEY` must be provided via environment variable.
-
----
-
-## 🧪 Testing
-
-```bash
-# Set test environment variable
-export AUDIT_SECRET_KEY="test-key"
-
-# Run all tests
-pytest -v
-
-# Run with coverage
-pytest -v --cov=.
-```
-
----
-
-## 📁 Project Structure
-
-```
-nnt-nnh-confidence-interval-engine/
-├── agents/                 # Enterprise agent system
-│   ├── api.py             # FastAPI REST server
-│   ├── base.py            # Security, PHI guard, audit trail
-│   ├── models.py          # Pydantic data models
-│   ├── supervisor.py      # Multi-agent orchestrator
-│   ├── workers.py         # Specialized evaluation workers
-│   ├── llm_factory.py     # LLM provider abstraction
-│   ├── metrics.py         # Prometheus metrics collector
-│   ├── learning.py        # Bayesian calibration engine
-│   └── streamer.py        # WebSocket telemetry
-├── tests/                 # Test suite
-├── cli.py                 # Command-line interface
-├── nnt_calc.py            # Core NNT calculation engine
-├── enrichment.py          # Enrichment feature modules
-├── simulator.py           # High-throughput stress testing
-├── web/index.html         # Operations console UI
-├── Dockerfile             # Container definition
-├── docker-compose.yml     # Docker Compose config
-└── requirements.txt       # Python dependencies
-```
-
----
-
-## 🐳 Docker Compose
-
-```bash
-docker-compose up -d
-```
-
----
-
-## 📝 License
-
-MIT License - see [LICENSE](LICENSE) for details.
+[MIT](LICENSE).
