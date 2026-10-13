@@ -143,3 +143,29 @@ def test_cli_single(capsys):
     result = json.loads(capsys.readouterr().out)
     assert result["measure"] == "NNT"
     assert result["number_needed_rounded_up"] == 25
+
+def test_export_escapes_untrusted_spreadsheet_formulas(tmp_path):
+    src, dst = tmp_path / "source.csv", tmp_path / "output.csv"
+    src.write_text("study_id,control_events,control_total,treatment_events,treatment_total\n"
+                   '"=HYPERLINK(""x"")",12,100,8,100\n', encoding="utf-8")
+    assert process_batch(str(src), str(dst)) == 1
+    with dst.open(encoding="utf-8", newline="") as f:
+        row = next(csv.DictReader(f))
+    assert row["study_id"].startswith("'=HYPERLINK")
+
+
+def test_audit_last_block_mutation_detected():
+    from agents.base import AuditTrail
+    trail = AuditTrail(secret_key="in-memory-test-secret")
+    trail.log("actor", "test", "ONE", {"x": 1})
+    assert trail.verify_integrity()
+    trail.logs[-1]["payload_hash"] = "not-the-original-hash"
+    assert not trail.verify_integrity()
+
+
+def test_audit_snapshot_is_detached():
+    from agents.base import AuditTrail
+    trail = AuditTrail(secret_key="another-in-memory-secret")
+    trail.log("actor", "test", "ONE", {"x": 1})
+    trail.get_trail()[-1]["current_hash"] = "changed"
+    assert trail.verify_integrity()
