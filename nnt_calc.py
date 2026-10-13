@@ -116,6 +116,8 @@ def process_batch(input_csv: str, output_csv: str, confidence_level: float = 0.9
             fields = reader.fieldnames or []
             if len(fields) != len(set(fields)):
                 raise ValueError("duplicate CSV headers are not supported")
+            if any(re.match(r"^\s*[=+\-@]", name) for name in fields):
+                raise ValueError("unsafe CSV header name")
             if not set(COLUMNS).issubset(fields):
                 raise ValueError("required CSV columns: " + ", ".join(COLUMNS))
             with tempfile.NamedTemporaryFile(
