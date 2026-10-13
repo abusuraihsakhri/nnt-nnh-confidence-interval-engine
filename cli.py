@@ -12,6 +12,17 @@ from agents.base import AuditLogger
 supervisor = SystemSupervisor(model_provider="mock")
 
 
+def _csv_boolean(value):
+    """Parse explicit booleans rather than truth-testing non-empty CSV strings."""
+    if isinstance(value, bool):
+        return value
+    if value is None or str(value).strip().lower() in ("", "0", "false", "no", "n"):
+        return False
+    if str(value).strip().lower() in ("1", "true", "yes", "y"):
+        return True
+    raise ValueError("is_critical_flag must be true or false")
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(prog="nnt-nnh-confidence-interval-engine", description="Nnt Nnh Confidence Interval Engine")
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -56,7 +67,7 @@ def main(argv=None):
         dossier = supervisor.process_task(payload)
         print("=" * 80)
         print(f"  NNT NNH CONFIDENCE INTERVAL ENGINE")
-        print(f"  Domain: Clinical & Biomedical AI | Standard: CAP / CLSI / ISO Standards")
+        print("  Demonstration audit only; no clinical validation")
         print(f"  Dossier ID: {dossier.dossier_id} | Urgency: [{dossier.overall_urgency.value}]")
         print("=" * 80)
         for a in dossier.alerts:
@@ -94,7 +105,7 @@ def main(argv=None):
                 primary_metric=float(r.get("primary_metric", 15.0)),
                 secondary_metric=float(r.get("secondary_metric", 5.0)),
                 status_descriptor=r.get("status_descriptor", "NOMINAL"),
-                is_critical_flag=bool(r.get("is_critical_flag", False)),
+                is_critical_flag=_csv_boolean(r.get("is_critical_flag", False)),
             )
             dossier = supervisor.process_task(payload)
             row_dict = dict(r)

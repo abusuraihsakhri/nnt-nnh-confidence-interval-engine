@@ -1,6 +1,6 @@
 """
 Enrichment Feature Implementation for nnt-nnh-confidence-interval-engine.
-Generated based on domain-specific requirements in specifications.
+Demonstration threshold routines; these are NOT implementations of the named\nstatistical methods and must not be used for NNT/NNH inference.
 """
 from dataclasses import dataclass, field
 from typing import Dict, Any, List, Optional, Tuple

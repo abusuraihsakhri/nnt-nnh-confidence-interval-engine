@@ -1,24 +1,15 @@
 FROM python:3.12-slim
-
 WORKDIR /app
-
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1
-
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    curl \
-    && rm -rf /var/lib/apt/lists/*
-
-COPY requirements.txt .
+RUN apt-get update && apt-get install -y --no-install-recommends curl \
+    && rm -rf /var/lib/apt/lists/* \
+    && useradd --uid 10001 --create-home --shell /usr/sbin/nologin appuser
+COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
-
 COPY . .
-
+USER appuser
 EXPOSE 8000
-
 HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:8000/health || exit 1
-
-# IMPORTANT: Set a strong, unique AUDIT_SECRET_KEY in production
-# via docker run -e AUDIT_SECRET_KEY=your-secret-key
 CMD ["python", "cli.py", "serve", "--host", "0.0.0.0", "--port", "8000"]

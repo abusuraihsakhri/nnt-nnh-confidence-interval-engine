@@ -118,41 +118,22 @@ class TestAuditTrail:
 
 
 class TestInputValidation:
-    """Tests for input validation and edge cases."""
+    """Count and interval validation, not arbitrary clinical severity labels."""
 
-    def test_calculate_metrics_with_negative_values(self):
+    def test_invalid_counts_raise(self):
         from nnt_calc import calculate_metrics
-        result = calculate_metrics(v1=-5.0, v2=-3.0)
-        assert "score" in result
-        assert isinstance(result["score"], float)
+        for args in [(-1, 10, 0, 10), (11, 10, 0, 10), (0, 0, 0, 10)]:
+            with pytest.raises(ValueError):
+                calculate_metrics(*args)
 
-    def test_calculate_metrics_with_zero(self):
+    def test_zero_difference_is_not_a_zero_nnt(self):
         from nnt_calc import calculate_metrics
-        result = calculate_metrics(v1=0.0, v2=0.0)
-        assert result["score"] == 0.0
+        result = calculate_metrics(0, 10, 0, 10)
+        assert result["number_needed"] is None
+        assert result["measure"] == "no_difference"
 
-    def test_calculate_metrics_with_large_values(self):
+    def test_clinically_neutral_example(self):
         from nnt_calc import calculate_metrics
-        result = calculate_metrics(v1=999999.0, v2=888888.0)
-        assert "score" in result
-        assert result["classification"] in ["Low / Standard", "Moderate / Intermediate", "High / Severe"]
-
-    def test_calculate_metrics_with_string_input(self):
-        from nnt_calc import calculate_metrics
-        result = calculate_metrics(v1="invalid", v2="data")
-        assert "score" in result
-
-    def test_calculate_metrics_classification_low(self):
-        from nnt_calc import calculate_metrics
-        result = calculate_metrics(v1=5.0)
-        assert result["classification"] == "Low / Standard"
-
-    def test_calculate_metrics_classification_moderate(self):
-        from nnt_calc import calculate_metrics
-        result = calculate_metrics(v1=15.0)
-        assert result["classification"] == "Moderate / Intermediate"
-
-    def test_calculate_metrics_classification_high(self):
-        from nnt_calc import calculate_metrics
-        result = calculate_metrics(v1=30.0)
-        assert result["classification"] == "High / Severe"
+        result = calculate_metrics(12, 100, 8, 100)
+        assert result["measure"] == "NNT"
+        assert result["absolute_risk_reduction"] == pytest.approx(0.04)
