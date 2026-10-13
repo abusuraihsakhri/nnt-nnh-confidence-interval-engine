@@ -135,6 +135,12 @@ def process_batch(input_csv: str, output_csv: str, confidence_level: float = 0.9
                         result = calculate_metrics(**values, confidence_level=confidence_level)
                     except ValueError as exc:
                         raise ValueError(f"CSV row {row_num}: {exc}") from exc
+                    # Spreadsheet formula injection: treat original metadata as untrusted.
+                    for field in fields:
+                        if field not in COLUMNS and field not in OUTPUT_COLUMNS:
+                            value = row.get(field)
+                            if isinstance(value, str) and re.match(r"^\s*[=+\-@]", value):
+                                row[field] = "'" + value
                     row.update({
                         "control_risk": result["control_risk"],
                         "treatment_risk": result["treatment_risk"],
