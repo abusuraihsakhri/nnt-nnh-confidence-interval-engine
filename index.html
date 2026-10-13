@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="NNT and NNH calculator with Newcombe–Wilson confidence intervals for independent groups. Calculations stay in your browser.">
+<title>NNT / NNH — Confidence Interval Calculator</title>
+<style>
+:root{color-scheme:dark;--bg:#0c1220;--panel:#161f30;--edge:#304159;--ink:#ecf2fb;--muted:#b4c3d7;--blue:#70b7ff;--accent:#58d4b3;--red:#ffb0a5}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+main{width:min(1100px,calc(100% - 2.5rem));margin:auto;padding:2.2rem 0 4rem}h1{font-size:clamp(2rem,4vw,3rem);letter-spacing:-.04em;line-height:1.17;margin:.45rem 0 .65rem}h2{font-size:1.25rem;margin:0 0 1rem}h3{font-size:1.04rem;margin:.3rem 0 .8rem}
+p{margin:.5rem 0 1rem}.eyebrow{color:var(--accent);font-size:.83rem;text-transform:uppercase;letter-spacing:.14em;font-weight:700}.lead{font-size:1.07rem;color:var(--muted);max-width:760px}
+.grid{display:grid;grid-template-columns:1.04fr .96fr;gap:1.25rem;align-items:start}.card{background:var(--panel);border:1px solid var(--edge);border-radius:15px;padding:1.35rem;min-width:0}
+.formgrid{display:grid;grid-template-columns:1fr 1fr;gap:1rem}.group{background:#101929;border:1px solid var(--edge);border-radius:11px;padding:1rem}
+label{display:block;color:var(--muted);font-size:.89rem;font-weight:600;margin-bottom:.32rem}input,select{display:block;width:100%;font:inherit;padding:.67rem .76rem;background:#0b1424;color:var(--ink);border:1px solid #657992;border-radius:8px;margin-bottom:.9rem}
+input:focus-visible,select:focus-visible,button:focus-visible,a:focus-visible{outline:3px solid var(--blue);outline-offset:3px}
+button{font:inherit;font-weight:700;background:var(--accent);color:#071d20;border:0;border-radius:8px;padding:.75rem 1.05rem;cursor:pointer}button:hover{filter:brightness(1.08)}button.secondary{background:#29415b;color:var(--ink)}button:disabled{opacity:.5;cursor:not-allowed}
+.buttons{display:flex;flex-wrap:wrap;gap:.65rem;margin-top:.3rem}.small{color:var(--muted);font-size:.86rem}.error{color:var(--red);min-height:1.6rem;font-weight:600}.result-tag{font-size:.83rem;text-transform:uppercase;color:var(--accent);letter-spacing:.11em;font-weight:700}
+.big{font-size:clamp(2.6rem,5vw,4.3rem);font-weight:800;line-height:1.1;letter-spacing:-.06em;margin:.25rem 0}.stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.75rem;margin:1.2rem 0}
+.stat{background:#101929;padding:.8rem;border:1px solid var(--edge);border-radius:8px}.stat .value{font-size:1.17rem;font-weight:750;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}.stat .label{font-size:.8rem;color:var(--muted)}
+.note{padding:1rem;background:#101929;border-left:3px solid var(--blue);border-radius:4px;color:var(--muted)}.bad{border-left-color:var(--red)}.hidden{display:none}
+details{margin-top:1.25rem}summary{cursor:pointer;font-weight:700}details p{color:var(--muted)}code{font-size:.88em;color:#bef3e5}
+footer{margin-top:1.75rem;color:var(--muted);font-size:.85rem}a{color:#96d0ff}hr{border:0;border-top:1px solid var(--edge);margin:1.4rem 0}
+@media(max-width:800px){.grid{grid-template-columns:1fr}}@media(max-width:530px){main{width:calc(100% - 1.5rem);padding-top:1.3rem}.card{padding:1rem}.formgrid{grid-template-columns:1fr}.stats{grid-template-columns:1fr 1fr}}
+</style>
+<script src="./app.js" defer></script>
+</head>
+<body>
+<main>
+<header>
+<div class="eyebrow">Evidence-based biostatistics · Client-side calculator</div>
+<h1>NNT / NNH confidence intervals</h1>
+<p class="lead">Calculate absolute risk reduction, relative risk, number needed to treat or harm, and two-sided score confidence intervals from adverse-event counts in two independent groups.</p>
+</header>
+<div class="grid">
+<section class="card" aria-labelledby="form-title">
+<h2 id="form-title">Study data</h2>
+<form id="calculator" novalidate>
+<div class="formgrid">
+<fieldset class="group" style="border:1px solid var(--edge);min-width:0"><legend><strong>Control group</strong></legend>
+<label for="control_events">Adverse events</label><input type="number" id="control_events" name="control_events" min="0" step="1" required value="120">
+<label for="control_total">Participants</label><input type="number" id="control_total" name="control_total" min="1" step="1" required value="1000"></fieldset>
+<fieldset class="group" style="border:1px solid var(--edge);min-width:0"><legend><strong>Treatment group</strong></legend>
+<label for="treatment_events">Adverse events</label><input type="number" id="treatment_events" name="treatment_events" min="0" step="1" required value="80">
+<label for="treatment_total">Participants</label><input type="number" id="treatment_total" name="treatment_total" min="1" step="1" required value="1000"></fieldset>
+</div>
+<label for="confidence">Two-sided confidence level</label>
+<select name="confidence" id="confidence"><option value="0.90">90%</option><option value="0.95" selected>95%</option><option value="0.99">99%</option></select>
+<div class="buttons"><button type="submit">Calculate</button><button class="secondary" type="button" id="sample">Restore example</button></div>
+<p role="alert" class="error" id="error"></p>
+</form>
+<hr>
+<h3>Batch processing (CSV)</h3>
+<p class="small">Use headers <code>control_events,control_total,treatment_events,treatment_total</code> and optional study identifiers. Up to 4,000 rows / 1 MB. Invalid rows stop the export.</p>
+<label for="batch-file">Upload a study-level CSV file</label><input type="file" id="batch-file" accept=".csv,text/csv">
+<button type="button" id="batch-button" class="secondary">Calculate &amp; export CSV</button>
+<p role="status" id="batch-status" class="small"></p>
+</section>
+<section class="card" aria-labelledby="results-title">
+<h2 id="results-title">Results</h2>
+<div aria-live="polite" id="results">
+<div class="result-tag" id="measure">NNT</div>
+<div class="big" id="number-needed">—</div>
+<p class="small" id="number-description">Number needed to treat</p>
+<div class="stats">
+<div class="stat"><div class="label">Control risk</div><div class="value" id="control-risk">—</div></div>
+<div class="stat"><div class="label">Treatment risk</div><div class="value" id="treatment-risk">—</div></div>
+<div class="stat"><div class="label">Absolute risk reduction</div><div class="value" id="arr">—</div></div>
+<div class="stat"><div class="label">Relative risk</div><div class="value" id="rr">—</div></div>
+</div>
+<p><strong id="ci-title">95% confidence interval</strong></p>
+<p id="ci-description">—</p>
+<div class="note" id="interpretation">Enter your study event counts to calculate an effect.</div>
+<div class="buttons"><button id="download-one" class="secondary" type="button" disabled>Download result CSV</button></div>
+</div>
+</section>
+</div>
+<details>
+<summary>Statistical method and interpretation</summary>
+<p>Adverse-event risk is events divided by participants. Absolute risk reduction (ARR) is control risk minus treatment risk. A positive ARR yields NNT = 1/ARR; a negative ARR yields NNH = 1/|ARR|. Zero ARR has no finite NNT or NNH. The displayed whole-person number is rounded upward.</p>
+<p>The risk-difference interval uses Newcombe (1998), method 10: the uncorrected Wilson score intervals for independent binomial proportions are combined geometrically. When the ARR interval contains zero, reciprocation gives an unbounded/disconnected range covering benefit and harm: <strong>no finite NNT/NNH confidence interval is reported</strong>. This is not an exact binomial interval and is not suitable for matched, clustered, time-to-event, or adjusted effect estimates.</p>
+<p>Reference: <a href="https://pubmed.ncbi.nlm.nih.gov/9595617/" rel="noopener noreferrer" target="_blank">Newcombe RG. Stat Med. 1998;17:873–890</a>.</p>
+</details>
+<footer>No personal data is needed. Calculations and CSV processing run entirely on this page without uploading data to a server. Use aggregated study counts, not patient-level identifiers. This research utility does not issue clinical recommendations. <a href="https://github.com/abusuraihsakhri/nnt-nnh-confidence-interval-engine">Source repository</a>.</footer>
+</main>
+</body>
+</html>
